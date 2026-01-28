@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FlaskFort Notes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-[#F7F6F3] text-[#2F3437]">
+    <div class="min-h-screen">
+      <div class="border-b border-black/5 bg-[#F7F6F3]/80 backdrop-blur">
+        <div class="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div>
+            <div class="text-lg font-semibold">FlaskFort Notes</div>
+            <div class="text-xs text-[#9AA0A6]">Notion‑style workspace with LLM assist</div>
+          </div>
+          <div class="flex gap-4 text-sm text-[#6B6F76]">
+            <a class="hover:text-black" href="/">Home</a>
+            <a class="hover:text-black" href="/login">Login</a>
+            <a class="hover:text-black" href="/docs">Docs</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="max-w-screen-2xl mx-auto px-6 py-8">
+        <div class="rounded-2xl border border-black/10 bg-white p-4 flex items-center justify-between">
+          <div>
+            <div class="text-xs text-[#9AA0A6]">JWT</div>
+            <div id="token_out" class="text-xs break-all text-[#6B6F76]"></div>
+          </div>
+          <div class="flex gap-2">
+            <button class="rounded bg-[#F7F6F3] px-3 py-2 text-sm border border-black/10" onclick="clearToken()">Clear Token</button>
+            <button class="rounded bg-[#2F3437] text-white px-3 py-2 text-sm" onclick="refreshList()">Refresh</button>
+          </div>
+        </div>
+
+        <div class="grid gap-6 mt-6 lg:grid-cols-12">
+          <div class="rounded-2xl border border-black/10 bg-white p-4 lg:col-span-3">
+            <h2 class="font-semibold mb-3">Your Notes</h2>
+            <div id="notes_list" class="space-y-2 text-sm"></div>
+          </div>
+
+          <div class="rounded-2xl border border-black/10 bg-white p-5 lg:col-span-6">
+            <h2 class="font-semibold">Editor</h2>
+            <label class="block text-xs mt-3 text-[#9AA0A6]">Note ID</label>
+            <input id="note_id" class="w-full rounded bg-[#F7F6F3] px-3 py-2 border border-black/10" placeholder="(auto)" />
+            <label class="block text-xs mt-3 text-[#9AA0A6]">Title</label>
+            <input id="note_title" class="w-full rounded bg-[#F7F6F3] px-3 py-2 border border-black/10" />
+            <label class="block text-xs mt-3 text-[#9AA0A6]">Content</label>
+            <textarea id="note_content" rows="8" class="w-full rounded bg-[#F7F6F3] px-3 py-2 border border-black/10"></textarea>
+            <div class="flex flex-wrap gap-2 mt-4">
+              <button class="rounded bg-[#1F9D55] text-white px-3 py-2 text-sm" onclick="createNote()">Create</button>
+              <button class="rounded bg-[#4C6EF5] text-white px-3 py-2 text-sm" onclick="updateNote()">Update</button>
+              <button class="rounded bg-[#E03131] text-white px-3 py-2 text-sm" onclick="deleteNote()">Delete</button>
+              <button class="rounded bg-[#F7F6F3] px-3 py-2 text-sm border border-black/10" onclick="getNote()">Get</button>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-black/10 bg-white p-5 lg:col-span-3">
+            <h2 class="font-semibold">LLM Assist (Ollama)</h2>
+            <p class="text-xs text-[#9AA0A6] mt-1">Summarize, rewrite, generate, or tag notes.</p>
+            <label class="block text-xs mt-3 text-[#9AA0A6]">Prompt (optional)</label>
+            <textarea id="ai_prompt" rows="4" class="w-full rounded bg-[#F7F6F3] px-3 py-2 border border-black/10"></textarea>
+            <div class="grid grid-cols-2 gap-2 mt-4">
+              <button class="rounded bg-[#2F3437] text-white px-3 py-2 text-sm" onclick="aiAssist('summarize')">Summarize</button>
+              <button class="rounded bg-[#2F3437] text-white px-3 py-2 text-sm" onclick="aiAssist('rewrite')">Rewrite</button>
+              <button class="rounded bg-[#2F3437] text-white px-3 py-2 text-sm" onclick="aiAssist('generate')">Generate</button>
+              <button class="rounded bg-[#2F3437] text-white px-3 py-2 text-sm" onclick="aiAssist('tags')">Tags</button>
+            </div>
+            <div class="mt-4 rounded bg-[#F7F6F3] p-3 text-xs border border-black/10" id="ai_out">
+              AI output appears here.
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 rounded-2xl border border-black/10 bg-white p-4 text-xs" id="notes_out">
+          Activity output appears here.
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const tokenKey = "flaskfort_token";
+
+      function authHeaders() {
+        const token = localStorage.getItem(tokenKey);
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      }
+
+      function showOut(data) {
+        const out = document.getElementById("notes_out");
+        if (data && data.error) {
+          out.textContent = `Error: ${data.error}`;
+          return;
+        }
+        out.textContent = JSON.stringify(data, null, 2);
+      }
+
+      async function createNote() {
+        const res = await fetch(`/notes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({
+            title: document.getElementById("note_title").value,
+            content: document.getElementById("note_content").value,
+          }),
+        });
+        const data = await res.json();
+        showOut(data);
+        if (data.id) {
+          document.getElementById("note_id").value = data.id;
+        }
+        refreshList();
+      }
+
+      async function listNotes() {
+        const res = await fetch(`/notes`, { headers: { ...authHeaders() } });
+        showOut(await res.json());
+        return res;
+      }
+
+      async function getNote() {
+        const id = document.getElementById("note_id").value;
+        const res = await fetch(`/notes/${id}`, { headers: { ...authHeaders() } });
+        const data = await res.json();
+        showOut(data);
+        if (data.id) {
+          document.getElementById("note_title").value = data.title || "";
+          document.getElementById("note_content").value = data.content || "";
+        }
+      }
+
+      async function updateNote() {
+        const id = document.getElementById("note_id").value;
+        const res = await fetch(`/notes/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({
+            title: document.getElementById("note_title").value,
+            content: document.getElementById("note_content").value,
+          }),
+        });
+        const data = await res.json();
+        showOut(data);
+        refreshList();
+      }
+
+      async function deleteNote() {
+        const id = document.getElementById("note_id").value;
+        const res = await fetch(`/notes/${id}`, {
+          method: "DELETE",
+          headers: { ...authHeaders() },
+        });
+        showOut(await res.json());
+        refreshList();
+      }
+
+      async function clearToken() {
+        localStorage.removeItem(tokenKey);
+        await fetch(`/auth/logout`, { method: "POST" });
+        document.getElementById("token_out").textContent = "JWT cleared";
+      }
+
+      async function refreshList() {
+        const res = await fetch(`/notes`, { headers: { ...authHeaders() } });
+        const data = await res.json();
+        const list = document.getElementById("notes_list");
+        list.innerHTML = "";
+        if (Array.isArray(data) && data.length) {
+          data.forEach((n) => {
+            const item = document.createElement("button");
+            item.className = "w-full text-left border border-black/10 rounded px-3 py-2 hover:bg-[#F7F6F3]";
+            item.textContent = `${n.id}. ${n.title}`;
+            item.onclick = () => {
+              document.getElementById("note_id").value = n.id;
+              document.getElementById("note_title").value = n.title || "";
+              document.getElementById("note_content").value = n.content || "";
+            };
+            list.appendChild(item);
+          });
+        } else {
+          list.textContent = "No notes yet.";
+        }
+      }
+
+      async function aiAssist(action) {
+        const res = await fetch(`/ai/assist`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({
+            action,
+            title: document.getElementById("note_title").value,
+            content: document.getElementById("note_content").value,
+            prompt: document.getElementById("ai_prompt").value,
+          }),
+        });
+        const data = await res.json();
+        const aiOut = document.getElementById("ai_out");
+        aiOut.textContent = data.result || JSON.stringify(data, null, 2);
+        if (data.result && action === "generate") {
+          document.getElementById("note_content").value = data.result;
+        }
+      }
+
+      const existing = localStorage.getItem(tokenKey);
+      if (existing) {
+        document.getElementById("token_out").textContent = `JWT stored: ${existing}`;
+      } else {
+        document.getElementById("token_out").textContent = "No JWT stored";
+      }
+      refreshList();
+    </script>
+  </body>
+</html>
