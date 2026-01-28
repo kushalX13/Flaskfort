@@ -3,8 +3,8 @@
 Secure Notes API shipped like a real product: JWT auth, Postgres, CI, Docker, and security
 gates. Built as a portfolio‑ready backend service with professional DevSecOps workflows.
 
-![CI](https://github.com/YOUR_GITHUB_USERNAME/Flaskfort/actions/workflows/ci.yml/badge.svg)
-![Security](https://github.com/YOUR_GITHUB_USERNAME/Flaskfort/actions/workflows/security.yml/badge.svg)
+![CI](https://github.com/kushalx13/Flaskfort/actions/workflows/ci.yml/badge.svg)
+![Security](https://github.com/kushalx13/Flaskfort/actions/workflows/security.yml/badge.svg)
 
 ## Architecture
 
