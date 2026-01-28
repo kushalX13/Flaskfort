@@ -1,5 +1,5 @@
-from flask import Blueprint, current_app, jsonify, request
 import requests
+from flask import Blueprint, current_app, jsonify, request
 
 ai_bp = Blueprint("ai", __name__)
 

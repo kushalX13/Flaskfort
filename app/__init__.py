@@ -35,8 +35,8 @@ def create_app(config_object: type[Config] = Config) -> Flask:
         )
 
     # Blueprints
-    from app.auth.routes import auth_bp
     from app.ai.routes import ai_bp
+    from app.auth.routes import auth_bp
     from app.dev.routes import dev_bp
     from app.docs.routes import docs_bp
     from app.health.routes import health_bp
