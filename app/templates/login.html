@@ -77,10 +77,11 @@
           }),
         });
         const data = await res.json();
-        document.getElementById("login_out").textContent = JSON.stringify(data, null, 2);
-        if (data.access_token) {
-          localStorage.setItem(tokenKey, data.access_token);
-          document.getElementById("token_out").textContent = `JWT stored: ${data.access_token}`;
+        const { access_token, ...safeData } = data || {};
+        document.getElementById("login_out").textContent = JSON.stringify(safeData, null, 2);
+        if (access_token) {
+          localStorage.setItem(tokenKey, access_token);
+          document.getElementById("token_out").textContent = "JWT stored";
         }
       }
 
@@ -92,7 +93,7 @@
 
       const existing = localStorage.getItem(tokenKey);
       if (existing) {
-        document.getElementById("token_out").textContent = `JWT stored: ${existing}`;
+        document.getElementById("token_out").textContent = "JWT stored";
       }
     </script>
   </body>

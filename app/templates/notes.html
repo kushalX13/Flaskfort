@@ -204,7 +204,7 @@
 
       const existing = localStorage.getItem(tokenKey);
       if (existing) {
-        document.getElementById("token_out").textContent = `JWT stored: ${existing}`;
+        document.getElementById("token_out").textContent = "JWT stored";
       } else {
         document.getElementById("token_out").textContent = "No JWT stored";
       }
