@@ -28,7 +28,7 @@ jobs:
         run: python -m pip install pip-audit
 
       - name: Dependency audit (High/Critical)
-        run: pip-audit -r requirements.txt --severity high --format json --output pip-audit.json
+        run: pip-audit --requirement requirements.txt --severity high --format json --output pip-audit.json --no-deps
 
       - name: Build image for scan
         run: docker build -t flaskfort:scan .
