@@ -43,13 +43,19 @@ jobs:
             scores = [s.get("score", 0) for s in severities if isinstance(s, dict)]
             return max(scores) if scores else None
 
+          def has_high_label(vuln):
+            for s in vuln.get("severity") or []:
+              if isinstance(s, dict) and str(s.get("type", "")).upper() in {"HIGH", "CRITICAL"}:
+                return True
+            return False
+
           high_found = False
           for dep in data.get("dependencies", []):
             for vuln in dep.get("vulns", []):
               score = max_score(vuln)
-              if score is None:
+              if score is not None and score >= 7.0:
                 high_found = True
-              elif score >= 7.0:
+              elif score is None and has_high_label(vuln):
                 high_found = True
 
           if high_found:
